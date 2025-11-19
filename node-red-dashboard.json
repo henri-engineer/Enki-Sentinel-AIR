@@ -1,0 +1,1772 @@
+[
+  {
+      "id": "ec01c2da649cf95f",
+      "type": "tab",
+      "label": "Monitor ENKI - Sistema de Detecção de CO",
+      "disabled": false,
+      "info": "Dashboard completo para monitoramento de qualidade do ar com alertas via Telegram"
+  },
+  {
+      "id": "916181b66018cba6",
+      "type": "mqtt in",
+      "z": "ec01c2da649cf95f",
+      "name": "MQTT Monitor ENKI",
+      "topic": "enki/monitor/co",
+      "qos": "0",
+      "datatype": "auto-detect",
+      "broker": "aaf1a9af4ea2ff0d",
+      "nl": false,
+      "rap": true,
+      "rh": 0,
+      "inputs": 0,
+      "x": 150,
+      "y": 200,
+      "wires": [
+          [
+              "b9fb3dbea3a6ebab",
+              "f52836142a58371c",
+              "7850ae901d4dac8f",
+              "4e0d9014d0733c6f",
+              "ad4892f063de16b6"
+          ]
+      ]
+  },
+  {
+      "id": "b9fb3dbea3a6ebab",
+      "type": "debug",
+      "z": "ec01c2da649cf95f",
+      "name": "Debug MQTT",
+      "active": true,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "x": 390,
+      "y": 300,
+      "wires": []
+  },
+  {
+      "id": "f52836142a58371c",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Parse Data ENKI",
+      "func": "let data = msg.payload;\n\nif (typeof data === 'string') {\n    try {\n        data = JSON.parse(data);\n    } catch(e) {\n        node.error('Erro ao parsear JSON: ' + e);\n        return null;\n    }\n}\n\nif (!data.adc || !data.status) {\n    node.error('Dados incompletos');\n    return null;\n}\n\nglobal.set('ultimaLeitura', {\n    adc: data.adc,\n    status: data.status,\n    nivel: data.nivel,\n    temp: data.temp || 0,\n    umid: data.umid || 0,\n    timestamp: new Date().toISOString()\n});\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 400,
+      "y": 200,
+      "wires": [
+          [
+              "eea60cedf2dd1c69"
+          ]
+      ]
+  },
+  {
+      "id": "eea60cedf2dd1c69",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Split para Widgets",
+      "func": "let data = msg.payload;\n\nif (typeof data === 'string') {\n    data = JSON.parse(data);\n}\n\n// Mensagem 1: ADC com topic para gráfico\nlet msg1 = {\n    payload: data.adc,\n    topic: 'ADC CO'  // Adicionar topic para o gráfico funcionar\n};\n\n// Mensagem 2: Temperatura\nlet msg2 = {payload: data.temp};\n\n// Mensagem 3: Umidade\nlet msg3 = {payload: data.umid};\n\n// Mensagem 4: Dados completos\nlet msg4 = {payload: data};\n\nreturn [msg1, msg2, msg3, msg4];",
+      "outputs": 4,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 600,
+      "y": 200,
+      "wires": [
+          [
+              "d15a05a8eaf8a7e7",
+              "341fc6e2d15e0df9",
+              "b86ae3e501cce76a",
+              "d1f6364c6009bd94"
+          ],
+          [
+              "02b3eae7326c85a1",
+              "38a3a33d7afc8866",
+              "93c6fa717d95c686"
+          ],
+          [
+              "82b4e8b302a28d4f",
+              "ef0a01613527c9d1",
+              "591bc2c444129cd2"
+          ],
+          [
+              "19ac6da41965d7f7"
+          ]
+      ]
+  },
+  {
+      "id": "d15a05a8eaf8a7e7",
+      "type": "ui-gauge",
+      "z": "ec01c2da649cf95f",
+      "name": "ADC Gauge",
+      "group": "b9f75a90a8387add",
+      "order": 2,
+      "value": "payload",
+      "valueType": "msg",
+      "width": "3",
+      "height": "4",
+      "gtype": "gauge-half",
+      "gstyle": "needle",
+      "title": "Nível ADC",
+      "alwaysShowTitle": false,
+      "units": "ADC",
+      "icon": "",
+      "prefix": "",
+      "suffix": "",
+      "segments": [
+          {
+              "from": "0",
+              "color": "#5cd65c",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "3760",
+              "color": "#ffc800",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "3840",
+              "color": "#ea5353",
+              "text": "",
+              "textType": "label"
+          }
+      ],
+      "min": 0,
+      "max": 4095,
+      "sizeThickness": 16,
+      "sizeGap": "4",
+      "sizeKeyThickness": "8",
+      "className": "",
+      "x": 950,
+      "y": 160,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "341fc6e2d15e0df9",
+      "type": "ui-text",
+      "z": "ec01c2da649cf95f",
+      "group": "b9f75a90a8387add",
+      "order": 1,
+      "width": 0,
+      "height": 0,
+      "name": "ADC Value",
+      "label": "ADC Atual:",
+      "format": "{{msg.payload}}",
+      "layout": "row-left",
+      "style": false,
+      "font": "",
+      "fontSize": 24,
+      "color": "#000000",
+      "wrapText": false,
+      "className": "",
+      "value": "payload",
+      "valueType": "msg",
+      "x": 950,
+      "y": 120,
+      "wires": []
+  },
+  {
+      "id": "b86ae3e501cce76a",
+      "type": "ui-chart",
+      "z": "ec01c2da649cf95f",
+      "group": "b9f75a90a8387add",
+      "name": "ADC Trend",
+      "label": "Histórico ADC (1h)",
+      "order": 4,
+      "chartType": "line",
+      "category": "topic",
+      "categoryType": "msg",
+      "xAxisLabel": "",
+      "xAxisProperty": "",
+      "xAxisPropertyType": "timestamp",
+      "xAxisType": "time",
+      "xAxisFormat": "",
+      "xAxisFormatType": "auto",
+      "xmin": "",
+      "xmax": "",
+      "yAxisLabel": "",
+      "yAxisProperty": "payload",
+      "yAxisPropertyType": "property",
+      "ymin": 0,
+      "ymax": 4095,
+      "bins": "",
+      "action": "append",
+      "stackSeries": false,
+      "pointRadius": 3,
+      "showLegend": true,
+      "removeOlder": 1,
+      "removeOlderUnit": "3600",
+      "removeOlderPoints": "",
+      "colors": [
+          "#0095ff"
+      ],
+      "textColor": [
+          "#666666"
+      ],
+      "textColorDefault": true,
+      "gridColor": [
+          "#e5e5e5"
+      ],
+      "gridColorDefault": true,
+      "width": "5",
+      "height": "5",
+      "className": "",
+      "interpolation": "linear",
+      "x": 950,
+      "y": 200,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "02b3eae7326c85a1",
+      "type": "ui-gauge",
+      "z": "ec01c2da649cf95f",
+      "name": "Temp Gauge",
+      "group": "87d95be2b93bbc76",
+      "order": 2,
+      "value": "payload",
+      "valueType": "msg",
+      "width": "4",
+      "height": "4",
+      "gtype": "gauge-half",
+      "gstyle": "needle",
+      "title": "Temperatura",
+      "alwaysShowTitle": false,
+      "units": "°C",
+      "icon": "",
+      "prefix": "",
+      "suffix": "",
+      "segments": [
+          {
+              "from": "-10",
+              "color": "#0befd4",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "10",
+              "color": "#5cd65c",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "30",
+              "color": "#ffc800",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "40",
+              "color": "#ea5353",
+              "text": "",
+              "textType": "label"
+          }
+      ],
+      "min": -10,
+      "max": 50,
+      "sizeThickness": "16",
+      "sizeGap": "4",
+      "sizeKeyThickness": "8",
+      "className": "",
+      "x": 950,
+      "y": 280,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "38a3a33d7afc8866",
+      "type": "ui-text",
+      "z": "ec01c2da649cf95f",
+      "group": "87d95be2b93bbc76",
+      "order": 1,
+      "width": "0",
+      "height": "0",
+      "name": "Temp Value",
+      "label": "Temperatura:",
+      "format": "{{msg.payload}}°C",
+      "layout": "row-left",
+      "style": false,
+      "font": "",
+      "fontSize": 20,
+      "color": "#000000",
+      "wrapText": false,
+      "className": "",
+      "value": "payload",
+      "valueType": "msg",
+      "x": 950,
+      "y": 240,
+      "wires": []
+  },
+  {
+      "id": "82b4e8b302a28d4f",
+      "type": "ui-gauge",
+      "z": "ec01c2da649cf95f",
+      "name": "Umid Gauge",
+      "group": "87d95be2b93bbc76",
+      "order": 5,
+      "value": "payload",
+      "valueType": "msg",
+      "width": "4",
+      "height": "4",
+      "gtype": "gauge-half",
+      "gstyle": "needle",
+      "title": "Umidade",
+      "alwaysShowTitle": false,
+      "units": "%",
+      "icon": "",
+      "prefix": "",
+      "suffix": "",
+      "segments": [
+          {
+              "from": "0",
+              "color": "#ea5353",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "30",
+              "color": "#ffc800",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "50",
+              "color": "#5cd65c",
+              "text": "",
+              "textType": "label"
+          },
+          {
+              "from": "70",
+              "color": "#0095ff",
+              "text": "",
+              "textType": "label"
+          }
+      ],
+      "min": 0,
+      "max": 100,
+      "sizeThickness": "16",
+      "sizeGap": "4",
+      "sizeKeyThickness": "8",
+      "className": "",
+      "x": 950,
+      "y": 360,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "ef0a01613527c9d1",
+      "type": "ui-text",
+      "z": "ec01c2da649cf95f",
+      "group": "87d95be2b93bbc76",
+      "order": 4,
+      "width": "4",
+      "height": "1",
+      "name": "Umid Value",
+      "label": "Umidade:",
+      "format": "{{msg.payload}}%",
+      "layout": "row-left",
+      "style": false,
+      "font": "",
+      "fontSize": 20,
+      "color": "#000000",
+      "wrapText": false,
+      "className": "",
+      "value": "payload",
+      "valueType": "msg",
+      "x": 950,
+      "y": 320,
+      "wires": []
+  },
+  {
+      "id": "19ac6da41965d7f7",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "6c0c1a196ba794c9",
+      "page": "",
+      "ui": "",
+      "name": "Status Card",
+      "order": 1,
+      "width": 12,
+      "height": 3,
+      "format": "<template><div class=\"status-card\" :class=\"statusClass\"><div class=\"status-icon\">{{statusIcon}}</div><div class=\"status-content\"><h2>{{msg.payload.status}}</h2><p>Nível: {{msg.payload.nivel}}</p><p>ADC: {{msg.payload.adc}} | Temp: {{msg.payload.temp}}°C | Umid: {{msg.payload.umid}}%</p></div></div></template><script>export default {computed: {statusClass() {const status = this.msg?.payload?.status; if (status === 'SEGURO') return 'status-safe'; if (status === 'ATENCAO') return 'status-warning'; if (status === 'PERIGO') return 'status-danger'; return '';}, statusIcon() {const status = this.msg?.payload?.status; if (status === 'SEGURO') return '✅'; if (status === 'ATENCAO') return '⚠️'; if (status === 'PERIGO') return '🚨'; return '📊';}}}</script><style>.status-card {display: flex; align-items: center; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);} .status-icon {font-size: 60px; margin-right: 20px;} .status-content h2 {margin: 0 0 8px 0; font-size: 28px; font-weight: bold;} .status-content p {margin: 4px 0; font-size: 16px;} .status-safe {background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;} .status-warning {background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #333;} .status-danger {background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; animation: pulse 1.5s infinite;} @keyframes pulse {0%, 100% {transform: scale(1);} 50% {transform: scale(1.02);}}</style>",
+      "storeOutMessages": true,
+      "passthru": true,
+      "templateScope": "local",
+      "className": "",
+      "x": 950,
+      "y": 400,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "7850ae901d4dac8f",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Armazenar Histórico",
+      "func": "let data = msg.payload;\nif (typeof data === 'string') {\n    try {\n        data = JSON.parse(data);\n    } catch(e) {\n        return null;\n    }\n}\n\n// Armazenar histórico\nlet historico = global.get('historico') || [];\n\nhistorico.push({\n    adc: data.adc || 0,\n    status: data.status || 'N/A',\n    nivel: data.nivel || 'N/A',\n    temp: data.temp || 0,\n    umid: data.umid || 0,\n    timestamp: new Date().toISOString()\n});\n\n// Manter últimas 480 leituras (8 horas @ 1min)\nwhile (historico.length > 480) {\n    historico.shift();\n}\n\nglobal.set('historico', historico);\n\n// Calcular estatísticas\nif (historico.length > 0) {\n    let adcs = historico.map(h => h.adc || 0);\n    let temps = historico.map(h => h.temp || 0);\n    let umids = historico.map(h => h.umid || 0);\n    \n    let stats = {\n        maxADC: Math.max(...adcs),\n        minADC: Math.min(...adcs),\n        avgTemp: (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1),\n        avgUmid: (umids.reduce((a, b) => a + b, 0) / umids.length).toFixed(1)\n    };\n    \n    global.set('stats', stats);\n}\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 400,
+      "y": 260,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "7ff46982d35d0811",
+      "type": "telegram sender",
+      "z": "ec01c2da649cf95f",
+      "name": "Enviar Alerta Telegram",
+      "bot": "55c6c8e6c080b396",
+      "haserroroutput": false,
+      "outputs": 1,
+      "x": 940,
+      "y": 20,
+      "wires": [
+          [
+              "2bdcc00ee2902c57"
+          ]
+      ]
+  },
+  {
+      "id": "5c164dd372e9b8e7",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "d80a62f0a2915c2e",
+      "page": "",
+      "ui": "",
+      "name": "Header ENKI",
+      "order": 1,
+      "width": 0,
+      "height": 0,
+      "format": "<template>\n  <div class=\"header-enki\">\n    <div class=\"logos-left\">\n      <img src=\"https://i0.wp.com/innovationweeksjc.com.br/wp-content/uploads/2024/08/Artboard-1.png?fit=854%2C403&ssl=1\" alt=\"FIAP\" class=\"logo\">\n      <img src=\"https://www.fiap.com.br/graduacao/global-solution/imgs/header/future-work.png\" alt=\"Global Solution\" class=\"logo-gs\">\n    </div>\n    <div class=\"title-box\">\n      <h1>🌍 MONITOR ENKI</h1>\n      <p>Sistema de Monitoramento de Qualidade do Ar</p>\n      <p class=\"subtitle\">Global Solution 2025 - Future Work</p>\n    </div>\n    <img src=\"https://paulocruzautomacoes.com.br/wp-content/uploads/2025/09/enki.png\" alt=\"ENKI\" class=\"logo\">\n  </div>\n</template>\n\n<style>\n  .header-enki {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    padding: 20px;\n    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n    border-radius: 12px;\n    color: white;\n    box-shadow: 0 4px 12px rgba(0,0,0,0.2);\n  }\n  .logos-left {\n    display: flex;\n    align-items: center;\n    gap: 15px;\n  }\n  .header-enki .logo {\n    max-height: 60px;\n    object-fit: contain;\n  }\n  .header-enki .logo-gs {\n    max-height: 50px;\n    object-fit: contain;\n    background-image: none;\n    padding: 5px;\n    border-radius: 8px;\n  }\n  .title-box {\n    text-align: center;\n    flex: 1;\n  }\n  .title-box h1 {\n    margin: 0;\n    font-size: 32px;\n    font-weight: bold;\n  }\n  .title-box p {\n    margin: 5px 0 0 0;\n    font-size: 14px;\n    opacity: 0.9;\n  }\n  .title-box .subtitle {\n    margin-top: 3px;\n    font-size: 12px;\n    opacity: 0.8;\n    font-style: italic;\n  }\n</style>",
+      "storeOutMessages": true,
+      "passthru": true,
+      "templateScope": "local",
+      "className": "",
+      "x": 130,
+      "y": 40,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "a77ad9457a4c44ba",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "a8e0a3da79a205f6",
+      "page": "",
+      "ui": "",
+      "name": "Stats Cards",
+      "order": 1,
+      "width": 12,
+      "height": 3,
+      "format": "<template>\n    <div class=\"stats-grid\">\n        <div class=\"card adc-max\">\n            <h4>📈 ADC Máx</h4>\n            <p>{{stats.maxADC || 0}}</p>\n        </div>\n        <div class=\"card adc-min\">\n            <h4>📉 ADC Mín</h4>\n            <p>{{stats.minADC || 0}}</p>\n        </div>\n        <div class=\"card temp-avg\">\n            <h4>🌡️ Temp Média</h4>\n            <p>{{stats.avgTemp || 0}}°C</p>\n        </div>\n        <div class=\"card umid-avg\">\n            <h4>💧 Umid Média</h4>\n            <p>{{stats.avgUmid || 0}}%</p>\n        </div>\n    </div>\n</template>\n\n<script>\n    export default {\n  data() {\n    return {\n      stats: {\n        maxADC: 0,\n        minADC: 0,\n        avgTemp: 0,\n        avgUmid: 0\n      }\n    }\n  },\n  watch: {\n    msg: {\n      handler(newMsg) {\n        if (newMsg && newMsg.payload) {\n          this.stats = newMsg.payload;\n        }\n      },\n      deep: true\n    }\n  }\n}\n</script>\n\n<style>\n    .stats-grid {\n        display: grid;\n        grid-template-columns: repeat(4, 1fr);\n        gap: 15px;\n    }\n\n    .card {\n        padding: 20px;\n        border-radius: 12px;\n        text-align: center;\n        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);\n    }\n\n    .card h4 {\n        margin: 0 0 8px 0;\n        font-size: 16px;\n    }\n\n    .card p {\n        margin: 0;\n        font-size: 28px;\n        font-weight: bold;\n    }\n\n    .adc-max {\n        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n        color: white;\n    }\n\n    .adc-min {\n        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);\n    }\n\n    .temp-avg {\n        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);\n    }\n\n    .umid-avg {\n        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);\n    }\n</style>",
+      "storeOutMessages": true,
+      "passthru": true,
+      "templateScope": "local",
+      "className": "",
+      "x": 590,
+      "y": 660,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "e873bdd7dd244969",
+      "type": "inject",
+      "z": "ec01c2da649cf95f",
+      "name": "Refresh Stats",
+      "props": [
+          {
+              "p": "payload"
+          },
+          {
+              "p": "topic",
+              "vt": "str"
+          }
+      ],
+      "repeat": "10",
+      "crontab": "",
+      "once": true,
+      "onceDelay": "",
+      "topic": "",
+      "payload": "",
+      "payloadType": "str",
+      "x": 170,
+      "y": 660,
+      "wires": [
+          [
+              "425c8b1d72faa5a6"
+          ]
+      ]
+  },
+  {
+      "id": "425c8b1d72faa5a6",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Get Stats",
+      "func": "let stats = global.get('stats') || {\n    maxADC: 0,\n    minADC: 0,\n    avgTemp: 0,\n    avgUmid: 0\n};\n\n// Garantir que os valores existam\nmsg.payload = {\n    maxADC: stats.maxADC || 0,\n    minADC: stats.minADC || 0,\n    avgTemp: stats.avgTemp || 0,\n    avgUmid: stats.avgUmid || 0\n};\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 360,
+      "y": 660,
+      "wires": [
+          [
+              "a77ad9457a4c44ba"
+          ]
+      ]
+  },
+  {
+      "id": "523b74d3c0b49d0a",
+      "type": "telegram receiver",
+      "z": "ec01c2da649cf95f",
+      "name": "Telegram Receiver",
+      "bot": "55c6c8e6c080b396",
+      "saveDataDir": "",
+      "filterCommands": false,
+      "x": 470,
+      "y": 820,
+      "wires": [
+          [
+              "7851ac0a282a6b06",
+              "d5c9a92386df5ba0"
+          ],
+          []
+      ]
+  },
+  {
+      "id": "7851ac0a282a6b06",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Get Desired Bot Function",
+      "func": "var chatId = msg.payload.chatId;\nvar buttons = [];\nbuttons.push(\n    [\n        {\n            text: \"Ajuda\",\n            callback_data : \"/Ajuda\"\n        }\n    ],\n    [\n        {\n            text: \"Dados\",\n            callback_data : \"/Dados\"\n        }\n    ],\n    [\n        {\n            text: \"Display\",\n            callback_data : \"/Display\"\n        }\n    ],\n    [\n        {\n            text: \"Status\",\n            callback_data : \"/Status\"\n        }\n    ],\n    [\n        {\n            text: \"👥 Usuários\",\n            callback_data : \"/Usuarios\"\n        }\n    ]\n);\nmsg.payload = {\n    type : \"message\",\n    content : \"Olá! Escolha um comando disponível no bot\",\n    chatId : chatId,\n    options : {\n        parse_mode : \"Markdown\",\n        reply_markup : JSON.stringify({\n            remove_keyboard : true,\n            inline_keyboard : buttons\n        })\n    }\n};\nreturn msg;",
+      "outputs": 1,
+      "timeout": 0,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 750,
+      "y": 840,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "886ed31b5bfc49a8",
+      "type": "telegram event",
+      "z": "ec01c2da649cf95f",
+      "name": "Monitor Bot Action",
+      "bot": "55c6c8e6c080b396",
+      "event": "callback_query",
+      "autoanswer": false,
+      "x": 150,
+      "y": 980,
+      "wires": [
+          [
+              "27b14b60cb936d27"
+          ]
+      ]
+  },
+  {
+      "id": "27b14b60cb936d27",
+      "type": "switch",
+      "z": "ec01c2da649cf95f",
+      "name": "Clicked Bot Function",
+      "property": "payload.content",
+      "propertyType": "msg",
+      "rules": [
+          {
+              "t": "eq",
+              "v": "/Ajuda",
+              "vt": "str"
+          },
+          {
+              "t": "eq",
+              "v": "/Dados",
+              "vt": "str"
+          },
+          {
+              "t": "eq",
+              "v": "/Display",
+              "vt": "str"
+          },
+          {
+              "t": "eq",
+              "v": "/Status",
+              "vt": "str"
+          },
+          {
+              "t": "eq",
+              "v": "/Usuarios",
+              "vt": "str"
+          }
+      ],
+      "checkall": "true",
+      "repair": false,
+      "outputs": 5,
+      "x": 420,
+      "y": 980,
+      "wires": [
+          [
+              "cf4d767e1a809797"
+          ],
+          [
+              "09d22adc0775a7b2"
+          ],
+          [
+              "de3c8a817befef84"
+          ],
+          [
+              "f487cf0777b89c4d"
+          ],
+          [
+              "68dc4ec5bffe95fa"
+          ]
+      ]
+  },
+  {
+      "id": "09d22adc0775a7b2",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Responder Dados",
+      "func": "var dados = global.get(\"ultimaLeitura\") || null;\nvar chatId = msg.payload.chatId;\n\nif (!dados || dados.adc === undefined) {\n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: \"❌ Nenhuma medição disponível ainda.\\n\\n\" +\n                 \"Aguarde alguns segundos para a primeira leitura do sensor.\"\n    };\n} else {\n    var tempo = new Date(dados.timestamp);\n    var tempoFormatado = tempo.toLocaleString(\"pt-BR\", {timeZone: \"America/Sao_Paulo\"});\n    \n    var statusEmoji = dados.status === 'SEGURO' ? '✅' : \n                      dados.status === 'ATENCAO' ? '⚠️' : '🚨';\n    \n    // Calcular faixa de PPM baseado no ADC\n    var faixaPPM = '';\n    if (dados.adc <= 3760) {\n        faixaPPM = '<1000 ppm';\n    } else if (dados.adc <= 3840) {\n        faixaPPM = '1000-2000 ppm';\n    } else {\n        faixaPPM = '>2000 ppm';\n    }\n    \n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: `📊 *Última Medição - Monitor ENKI*\\n\\n` +\n                 `${statusEmoji} Status: *${dados.status}*\\n` +\n                 `📈 ADC: ${dados.adc}\\n` +\n                 `💨 Nível CO: ${faixaPPM}\\n` +\n                 `🌡️ Temperatura: ${dados.temp}°C\\n` +\n                 `💧 Umidade: ${dados.umid}%\\n` +\n                 `🕐 Horário: ${tempoFormatado}\\n\\n` +\n                 `_Use /Display para ver estatísticas completas_`,\n        parse_mode: \"Markdown\"\n    };\n}\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 750,
+      "y": 960,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "cf4d767e1a809797",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Responder Ajuda",
+      "func": "var chatId = msg.payload.chatId;\n\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `🤖 *Monitor ENKI - Bot de Alertas*\\n\\n` +\n             `*Comandos Disponíveis:*\\n\\n` +\n             `/Ajuda - Mostra esta mensagem\\n` +\n             `/Dados - Última medição do sensor\\n` +\n             `/Display - Estatísticas completas\\n` +\n             `/Status - Status do sistema\\n\\n` +\n             `📊 *Sistema de Alertas:*\\n` +\n             `Você receberá notificações automáticas sempre que:\\n` +\n             `• Status mudar de SEGURO → ATENÇÃO\\n` +\n             `• Status mudar de ATENÇÃO → PERIGO\\n` +\n             `• Status mudar de PERIGO → SEGURO\\n\\n` +\n             `💡 *Dica:* Use os comandos a qualquer momento!`,\n    parse_mode: \"Markdown\"\n};\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 750,
+      "y": 900,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "de3c8a817befef84",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Responder Display",
+      "func": "var stats = global.get(\"stats\") || null;\nvar ultimaLeitura = global.get(\"ultimaLeitura\") || null;\nvar historico = global.get(\"historico\") || [];\nvar chatId = msg.payload.chatId;\n\nif (!stats || !ultimaLeitura) {\n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: \"❌ Dados de estatísticas não disponíveis ainda.\\n\\n\" +\n                 \"Aguarde mais leituras do sensor.\"\n    };\n} else {\n    var variADC = (stats.maxADC - stats.minADC);\n    var periodoHoras = (historico.length * 3 / 60).toFixed(1);\n    \n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: `📊 *Monitor ENKI - Estatísticas*\\n\\n` +\n                 `📅 Período: ${periodoHoras}h (${historico.length} leituras)\\n` +\n                 `⏰ Última atualização: ${new Date().toLocaleString(\"pt-BR\")}\\n\\n` +\n                 `📈 *Monóxido de Carbono (ADC)*\\n` +\n                 `   • Máximo: ${stats.maxADC}\\n` +\n                 `   • Mínimo: ${stats.minADC}\\n` +\n                 `   • Variação: ${variADC}\\n\\n` +\n                 `🌡️ *Temperatura Média*\\n` +\n                 `   • ${stats.avgTemp}°C\\n\\n` +\n                 `💧 *Umidade Média*\\n` +\n                 `   • ${stats.avgUmid}%\\n\\n` +\n                 `_Use /Status para ver o status do sistema_`,\n        parse_mode: \"Markdown\"\n    };\n}\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 750,
+      "y": 1020,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "f487cf0777b89c4d",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Responder Status",
+      "func": "var chatId = msg.payload.chatId;\nvar ultimaLeitura = global.get(\"ultimaLeitura\");\nvar historico = global.get(\"historico\") || [];\nvar groupChatId = global.get(\"groupChatId\");\nvar chatIds = global.get(\"chatIds\") || [];\n\nvar statusSensor = ultimaLeitura ? \"🟢 Online\" : \"🔴 Offline\";\nvar statusAtual = ultimaLeitura ? ultimaLeitura.status : \"Desconhecido\";\nvar statusGrupo = groupChatId ? \"👥 Grupo ativo\" : \"👤 Modo individual\";\nvar totalUsuarios = groupChatId ? \"Grupo único\" : (chatIds.length + 1) + \" usuários\";\n\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `⚙️ *Monitor ENKI - Status do Sistema*\\n\\n` +\n             `📡 Sensor MQ-2: ${statusSensor}\\n` +\n             `🚦 Status Atual: ${statusAtual}\\n` +\n             `📊 Histórico: ${historico.length} leituras\\n` +\n             `👥 Modo: ${statusGrupo}\\n` +\n             `📱 Destinatários: ${totalUsuarios}\\n\\n` +\n             `_Última atualização: ${new Date().toLocaleString(\"pt-BR\")}_`,\n    parse_mode: \"Markdown\"\n};\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 750,
+      "y": 1080,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "fecbc64dee305f41",
+      "type": "telegram sender",
+      "z": "ec01c2da649cf95f",
+      "name": "Telegram Sender",
+      "bot": "55c6c8e6c080b396",
+      "haserroroutput": false,
+      "outputs": 1,
+      "x": 1110,
+      "y": 920,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "d5c9a92386df5ba0",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Capt Chat ID",
+      "func": "var chatId = msg.payload.chatId;\nvar chatType = msg.payload.chat?.type || \"private\";\nvar chatTitle = msg.payload.chat?.title || \"N/A\";\nvar username = msg.payload.from?.username || \"sem_username\";\nvar firstName = msg.payload.from?.first_name || \"Usuário\";\n\nnode.warn(\"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\");\nnode.warn(\"📱 Novo contato: \" + chatId);\nnode.warn(\"Tipo: \" + chatType);\n\nif (chatType === \"group\" || chatType === \"supergroup\") {\n    node.warn(\"Nome do Grupo: \" + chatTitle);\n    node.warn(\"👥 Este é um GRUPO - use este ID!\");\n    global.set(\"groupChatId\", chatId);\n    \n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: \"✅ *Grupo Registrado com Sucesso!*\\n\\n\" +\n                 \"📋 Nome: \" + chatTitle + \"\\n\" +\n                 \"🆔 Chat ID: `\" + chatId + \"`\\n\\n\" +\n                 \"👥 Todos os membros receberão notificações automáticas quando houver mudança no status do Monitor ENKI!\\n\\n\" +\n                 \"💡 Use os comandos para interagir com o bot.\",\n        parse_mode: \"Markdown\"\n    };\n} else {\n    node.warn(\"Username: @\" + username);\n    node.warn(\"Nome: \" + firstName);\n    node.warn(\"👤 Este é um chat INDIVIDUAL\");\n    \n    var chatIds = global.get(\"chatIds\") || [];\n    \n    if (chatIds.includes(chatId)) {\n        node.warn(\"⚠️ Usuário JÁ registrado - SEM mensagem!\");\n        node.warn(\"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\");\n        return null;\n    }\n    \n    chatIds.push(chatId);\n    global.set(\"chatIds\", chatIds);\n    \n    node.warn(\"✓ Usuário adicionado à lista!\");\n    node.warn(\"📊 Total de usuários registrados: \" + chatIds.length);\n    \n    msg.payload = {\n        chatId: chatId,\n        type: \"message\",\n        content: \"✅ *Registrado com Sucesso!*\\n\\n\" +\n                 \"👤 Nome: \" + firstName + \"\\n\" +\n                 \"🆔 Seu Chat ID: `\" + chatId + \"`\\n\\n\" +\n                 \"🔔 Você receberá notificações automáticas do Monitor ENKI sempre que:\\n\" +\n                 \"• Status mudar de SEGURO → ATENÇÃO\\n\" +\n                 \"• Status mudar de ATENÇÃO → PERIGO\\n\" +\n                 \"• Status mudar de PERIGO → SEGURO\\n\\n\" +\n                 \"💡 Use os comandos abaixo para interagir!\",\n        parse_mode: \"Markdown\"\n    };\n}\n\nnode.warn(\"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\");\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 735,
+      "y": 790,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "4a778ec627e31ac9",
+      "type": "comment",
+      "z": "ec01c2da649cf95f",
+      "name": "Chat Id Professor: 5815095930",
+      "info": "5815095930\n\nchat id Henrique: 8320613648",
+      "x": 1210,
+      "y": 20,
+      "wires": []
+  },
+  {
+      "id": "675a1b77e0f6d9ea",
+      "type": "ui-markdown",
+      "z": "ec01c2da649cf95f",
+      "group": "d80a62f0a2915c2e",
+      "name": "Wokwi Link",
+      "order": 2,
+      "width": "3",
+      "height": "1",
+      "content": "[🔗 <span style=\"color:white\">Projeto Wokwi</span>](https://wokwi.com/projects/447367351663093761)",
+      "className": "",
+      "x": 130,
+      "y": 80,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "dd520e94124d94bb",
+      "type": "ui-markdown",
+      "z": "ec01c2da649cf95f",
+      "group": "d80a62f0a2915c2e",
+      "name": "GitHub Link",
+      "order": 3,
+      "width": "3",
+      "height": "1",
+      "content": "[📲 <span style=\"color:white\">GitHub</span>](https://github.com/seu-usuario/monitor-enki)",
+      "className": "",
+      "x": 290,
+      "y": 80,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "47352288280c7d9a",
+      "type": "ui-markdown",
+      "z": "ec01c2da649cf95f",
+      "group": "d80a62f0a2915c2e",
+      "name": "Bot Link",
+      "order": 4,
+      "width": "3",
+      "height": "1",
+      "content": "[🤖 <span style=\"color:white\">Falar com Bot</span>](https://t.me/MonitorENKIBot)",
+      "className": "",
+      "x": 440,
+      "y": 80,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "d2073630279fe68e",
+      "type": "ui-markdown",
+      "z": "ec01c2da649cf95f",
+      "group": "d80a62f0a2915c2e",
+      "name": "README Link",
+      "order": 5,
+      "width": "3",
+      "height": "1",
+      "content": "[📑 <span style=\"color:white\">README</span>](https://github.com/seu-usuario/monitor-enki/blob/main/README.md)",
+      "className": "",
+      "x": 600,
+      "y": 80,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "f81b38c9fe1224fe",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Formatar para Tabela",
+      "func": "let historico = global.get('historico') || [];\n\n// Debug\nnode.warn('━━━━━━━━━━━━━━━━━━━━');\nnode.warn('📊 Histórico Total: ' + historico.length + ' registros');\n\nif (historico.length === 0) {\n    node.warn('⚠️ Nenhum histórico encontrado!');\n    msg.payload = [];\n    return msg;\n}\n\n// Pegar últimas 10 e formatar\nlet tabelaDados = historico.slice(-10).reverse().map(item => {\n    let timestamp = new Date(item.timestamp);\n    return {\n        time: timestamp.toLocaleTimeString('pt-BR'),\n        adc: item.adc || 0,\n        status: item.status || 'N/A',\n        temp: (item.temp || 0) + '°C',\n        umid: (item.umid || 0) + '%'\n    };\n});\n\nnode.warn('✓ Dados formatados: ' + tabelaDados.length);\nnode.warn('━━━━━━━━━━━━━━━━━━━━');\n\nmsg.payload = tabelaDados;\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 1410,
+      "y": 380,
+      "wires": [
+          [
+              "ad2d268ca920fafb",
+              "NOVO_TEMPLATE_TABELA"
+          ]
+      ]
+  },
+  {
+      "id": "1bc2020990874858",
+      "type": "inject",
+      "z": "ec01c2da649cf95f",
+      "name": "Refresh Tabela",
+      "props": [
+          {
+              "p": "payload"
+          },
+          {
+              "p": "topic",
+              "vt": "str"
+          }
+      ],
+      "repeat": "5",
+      "crontab": "",
+      "once": true,
+      "onceDelay": "",
+      "topic": "",
+      "payload": "",
+      "payloadType": "str",
+      "x": 1170,
+      "y": 380,
+      "wires": [
+          [
+              "f81b38c9fe1224fe"
+          ]
+      ]
+  },
+  {
+      "id": "93c6fa717d95c686",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Format Temp para Gráfico",
+      "func": "msg.topic = '🌡️ Temperatura';\nreturn msg;",
+      "outputs": 1,
+      "x": 1190,
+      "y": 280,
+      "wires": [
+          [
+              "d31aa76a56e0c4ef"
+          ]
+      ]
+  },
+  {
+      "id": "591bc2c444129cd2",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Format Umid para Gráfico",
+      "func": "msg.topic = '💧 Umidade';\nreturn msg;",
+      "outputs": 1,
+      "x": 1190,
+      "y": 340,
+      "wires": [
+          [
+              "d31aa76a56e0c4ef"
+          ]
+      ]
+  },
+  {
+      "id": "bea4ae7862bd6737",
+      "type": "ui-button",
+      "z": "ec01c2da649cf95f",
+      "group": "a8e0a3da79a205f6",
+      "name": "Botão Clear",
+      "label": "🗑️ Limpar Histórico",
+      "order": 4,
+      "width": "3",
+      "height": "1",
+      "emulateClick": false,
+      "tooltip": "Limpar gráficos e histórico",
+      "color": "",
+      "bgcolor": "",
+      "className": "",
+      "icon": "",
+      "payload": "",
+      "payloadType": "str",
+      "topic": "topic",
+      "x": 1180,
+      "y": 440,
+      "wires": [
+          [
+              "0633b1f3383e06de"
+          ]
+      ]
+  },
+  {
+      "id": "0633b1f3383e06de",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Clear History",
+      "func": "global.set('historico', []);\nglobal.set('stats', {maxADC: 0, minADC: 0, avgTemp: 0, avgUmid: 0});\nmsg.payload = [];\nnode.warn('✓ Histórico limpo!');\nreturn msg;",
+      "outputs": 1,
+      "x": 1390,
+      "y": 440,
+      "wires": [
+          [
+              "d31aa76a56e0c4ef"
+          ]
+      ]
+  },
+  {
+      "id": "d1f6364c6009bd94",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "b9f75a90a8387add",
+      "page": "",
+      "ui": "",
+      "name": "Condições ADC",
+      "order": 3,
+      "width": "4",
+      "height": "5",
+      "format": "<template>\n    <h3 style=\"text-align:center; color: #e5e7eb; margin-bottom: 15px;\">📊 Faixas de CO</h3>\n    <table style=\"text-align:center; width:100%\">\n        <tr>\n            <th>ADC</th>\n            <th>Nível</th>\n            <th>Status</th>\n        </tr>\n        <tr :class=\"{active: (msg?.payload ?? 0) <= 3760}\">\n            <td>0-3760</td>\n            <td>&lt;1000ppm</td>\n            <td>✅ SEGURO</td>\n        </tr>\n        <tr :class=\"{active: (msg?.payload ?? 0) > 3760 && (msg?.payload ?? 0) <= 3840}\">\n            <td>3761-3840</td>\n            <td>1000-2000ppm</td>\n            <td>⚠️ ATENÇÃO</td>\n        </tr>\n        <tr :class=\"{active: (msg?.payload ?? 0) > 3840}\">\n            <td>&gt;3840</td>\n            <td>&gt;2000ppm</td>\n            <td>🚨 PERIGO</td>\n        </tr>\n    </table>\n</template>\n\n<style>\n    table {\n        border-collapse: collapse;\n        margin-top: 10px;\n        width: 100%;\n        background: #1f2937;\n    }\n\n    th {\n        padding: 10px 8px;\n        border: 1px solid #4b5563;\n        background: #374151;\n        color: #f3f4f6;\n        font-weight: bold;\n        font-size: 14px;\n    }\n\n    td {\n        padding: 10px 8px;\n        border: 1px solid #4b5563;\n        color: #d1d5db;\n        font-size: 13px;\n    }\n\n    tr {\n        background: #1f2937;\n        transition: all 0.3s ease;\n    }\n\n    tr:hover {\n        background: #374151;\n    }\n\n    .active {\n        background: linear-gradient(45deg, #667eea, #764ba2) !important;\n        color: white !important;\n        font-weight: bold;\n        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);\n    }\n\n    .active td {\n        color: white !important;\n        border-color: rgba(255, 255, 255, 0.3);\n    }\n</style>",
+      "storeOutMessages": true,
+      "passthru": true,
+      "templateScope": "local",
+      "className": "",
+      "x": 960,
+      "y": 80,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "4e0d9014d0733c6f",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Processar Automação",
+      "func": "let data = msg.payload;\nif (typeof data === 'string') {\n    try {\n        data = JSON.parse(data);\n    } catch(e) {\n        return null;\n    }\n}\n\n// Extrai dados de automação\nlet automacao = data.automacao || {};\n\n// Salva no contexto global\nglobal.set('dadosAutomacao', {\n    janela: automacao.janela || 0,\n    ventilador: automacao.ventilador || 0,\n    exaustor: automacao.exaustor || false,\n    filtro: automacao.filtro || 0,\n    timestamp: new Date().toISOString()\n});\n\n// Armazena histórico de acionamentos\nlet historicoAcionamentos = global.get('historicoAcionamentos') || [];\nhistoricoAcionamentos.push({\n    janela: automacao.janela || 0,\n    ventilador: automacao.ventilador || 0,\n    exaustor: automacao.exaustor || false,\n    filtro: automacao.filtro || 0,\n    timestamp: new Date().toISOString()\n});\n\n// Mantém apenas últimas 24h (2880 registros @ 30s)\nwhile (historicoAcionamentos.length > 2880) {\n    historicoAcionamentos.shift();\n}\nglobal.set('historicoAcionamentos', historicoAcionamentos);\n\n// Retorna 4 outputs: janela, ventilador, exaustor, filtro, dados completos\nreturn [\n    {payload: automacao.janela || 0},\n    {payload: automacao.ventilador || 0},\n    {payload: automacao.exaustor || false},\n    {payload: automacao.filtro || 0},\n    {payload: automacao}\n];",
+      "outputs": 5,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 380,
+      "y": 400,
+      "wires": [
+          [
+              "b18fbe9001f6a230"
+          ],
+          [
+              "3593d569bff0eea9"
+          ],
+          [
+              "65cdbe245890de58"
+          ],
+          [
+              "9b47e0ee695080f6"
+          ],
+          [
+              "2bbdd8f52ad7d360"
+          ]
+      ]
+  },
+  {
+      "id": "b18fbe9001f6a230",
+      "type": "ui-gauge",
+      "z": "ec01c2da649cf95f",
+      "name": "Gauge Janela",
+      "group": "9b976eddc802eb95",
+      "order": 1,
+      "value": "payload",
+      "valueType": "msg",
+      "width": "3",
+      "height": "4",
+      "gtype": "gauge-half",
+      "gstyle": "needle",
+      "title": "🪟 Janela",
+      "alwaysShowTitle": true,
+      "units": "°",
+      "icon": "",
+      "prefix": "",
+      "suffix": "",
+      "segments": [
+          {
+              "from": "0",
+              "color": "#5cd65c"
+          },
+          {
+              "from": "60",
+              "color": "#ffc800"
+          },
+          {
+              "from": "120",
+              "color": "#ea5353"
+          }
+      ],
+      "min": 0,
+      "max": 180,
+      "sizeThickness": 16,
+      "sizeGap": "4",
+      "sizeKeyThickness": "8",
+      "className": "",
+      "x": 630,
+      "y": 360,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "3593d569bff0eea9",
+      "type": "ui-gauge",
+      "z": "ec01c2da649cf95f",
+      "name": "Gauge Ventilador",
+      "group": "9b976eddc802eb95",
+      "order": 2,
+      "value": "payload",
+      "valueType": "msg",
+      "width": "3",
+      "height": "4",
+      "gtype": "gauge-half",
+      "gstyle": "needle",
+      "title": "🌀 Ventilador",
+      "alwaysShowTitle": true,
+      "units": "%",
+      "icon": "",
+      "prefix": "",
+      "suffix": "",
+      "segments": [
+          {
+              "from": "0",
+              "color": "#6b7280"
+          },
+          {
+              "from": "1",
+              "color": "#5cd65c"
+          },
+          {
+              "from": "40",
+              "color": "#ffc800"
+          },
+          {
+              "from": "70",
+              "color": "#ea5353"
+          }
+      ],
+      "min": 0,
+      "max": 255,
+      "sizeThickness": 16,
+      "sizeGap": "4",
+      "sizeKeyThickness": "8",
+      "className": "",
+      "x": 640,
+      "y": 400,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "65cdbe245890de58",
+      "type": "ui-switch",
+      "z": "ec01c2da649cf95f",
+      "name": "Switch Exaustor",
+      "label": "💨 Exaustor",
+      "group": "9b976eddc802eb95",
+      "order": 3,
+      "width": "3",
+      "height": "2",
+      "passthru": false,
+      "decouple": false,
+      "topic": "topic",
+      "topicType": "msg",
+      "style": "",
+      "className": "",
+      "layout": "",
+      "clickableArea": "switch",
+      "onvalue": "true",
+      "onvalueType": "bool",
+      "onicon": "power",
+      "oncolor": "green",
+      "offvalue": "false",
+      "offvalueType": "bool",
+      "officon": "power_off",
+      "offcolor": "grey",
+      "x": 640,
+      "y": 440,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "9b47e0ee695080f6",
+      "type": "ui-gauge",
+      "z": "ec01c2da649cf95f",
+      "name": "Progress Filtro",
+      "group": "9b976eddc802eb95",
+      "order": 4,
+      "value": "payload",
+      "valueType": "msg",
+      "width": "3",
+      "height": "4",
+      "gtype": "gauge-half",
+      "gstyle": "needle",
+      "title": "🔄 Filtro",
+      "alwaysShowTitle": true,
+      "units": "steps",
+      "icon": "",
+      "prefix": "",
+      "suffix": "",
+      "segments": [
+          {
+              "from": "0",
+              "color": "#5cd65c"
+          },
+          {
+              "from": "512",
+              "color": "#ffc800"
+          },
+          {
+              "from": "1024",
+              "color": "#ea5353"
+          }
+      ],
+      "min": 0,
+      "max": 2048,
+      "sizeThickness": 16,
+      "sizeGap": "4",
+      "sizeKeyThickness": "8",
+      "className": "",
+      "x": 630,
+      "y": 480,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "2bbdd8f52ad7d360",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "9b976eddc802eb95",
+      "page": "",
+      "ui": "",
+      "name": "Status Atuadores",
+      "order": 5,
+      "width": "12",
+      "height": "8",
+      "format": "<template>\n  <div class=\"status-atuadores\">\n    <h3>📋 Status dos Atuadores</h3>\n    \n    <div class=\"atuador-item\" :class=\"janelaClass\">\n      <div class=\"icon\">🪟</div>\n      <div class=\"info\">\n        <div class=\"label\">Janela</div>\n        <div class=\"value\">{{janela}}° ({{janelaStatus}})</div>\n      </div>\n      <div class=\"indicator\" :style=\"{background: janelaColor}\"></div>\n    </div>\n    \n    <div class=\"atuador-item\" :class=\"ventiladorClass\">\n      <div class=\"icon\">🌀</div>\n      <div class=\"info\">\n        <div class=\"label\">Ventilador</div>\n        <div class=\"value\">{{ventilador}}/255 ({{ventiladorPercent}}%)</div>\n      </div>\n      <div class=\"indicator\" :style=\"{background: ventiladorColor}\"></div>\n    </div>\n    \n    <div class=\"atuador-item\" :class=\"exaustorClass\">\n      <div class=\"icon\">💨</div>\n      <div class=\"info\">\n        <div class=\"label\">Exaustor</div>\n        <div class=\"value\">{{exaustor ? 'Ligado' : 'Desligado'}}</div>\n      </div>\n      <div class=\"indicator\" :style=\"{background: exaustorColor}\"></div>\n    </div>\n    \n    <div class=\"atuador-item\" :class=\"filtroClass\">\n      <div class=\"icon\">🔄</div>\n      <div class=\"info\">\n        <div class=\"label\">Filtro</div>\n        <div class=\"value\">Pos {{filtro}} ({{filtroStatus}})</div>\n      </div>\n      <div class=\"indicator\" :style=\"{background: filtroColor}\"></div>\n    </div>\n    \n    <div class=\"footer-info\">\n      <div class=\"consumo\">\n        <span class=\"label\">🔋 Consumo:</span>\n        <span class=\"value\">~{{consumoTotal}}W</span>\n      </div>\n      <div class=\"update\">\n        <span class=\"label\">Atualização:</span>\n        <span class=\"value\">{{ultimaAtualizacao}}</span>\n      </div>\n    </div>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      ultimaAtualizacao: new Date().toLocaleTimeString('pt-BR')\n    }\n  },\n  computed: {\n    janela() {\n      return this.msg?.payload?.janela || 0;\n    },\n    janelaStatus() {\n      if (this.janela === 0) return 'Fechada';\n      if (this.janela <= 90) return 'Parcial';\n      return 'Aberta';\n    },\n    janelaClass() {\n      if (this.janela === 0) return 'status-safe';\n      if (this.janela <= 90) return 'status-warning';\n      return 'status-danger';\n    },\n    janelaColor() {\n      if (this.janela === 0) return '#10b981';\n      if (this.janela <= 90) return '#fbbf24';\n      return '#ef4444';\n    },\n    ventilador() {\n      return this.msg?.payload?.ventilador || 0;\n    },\n    ventiladorPercent() {\n      return Math.round((this.ventilador / 255) * 100);\n    },\n    ventiladorClass() {\n      if (this.ventilador === 0) return 'status-safe';\n      if (this.ventilador <= 170) return 'status-warning';\n      return 'status-danger';\n    },\n    ventiladorColor() {\n      if (this.ventilador === 0) return '#6b7280';\n      if (this.ventilador <= 170) return '#fbbf24';\n      return '#ef4444';\n    },\n    exaustor() {\n      return this.msg?.payload?.exaustor || false;\n    },\n    exaustorClass() {\n      return this.exaustor ? 'status-danger' : 'status-safe';\n    },\n    exaustorColor() {\n      return this.exaustor ? '#ef4444' : '#10b981';\n    },\n    filtro() {\n      return this.msg?.payload?.filtro || 0;\n    },\n    filtroStatus() {\n      if (this.filtro === 0) return 'Repouso';\n      if (this.filtro <= 1024) return 'Médio';\n      return 'Máximo';\n    },\n    filtroClass() {\n      if (this.filtro === 0) return 'status-safe';\n      if (this.filtro <= 1024) return 'status-warning';\n      return 'status-danger';\n    },\n    filtroColor() {\n      if (this.filtro === 0) return '#10b981';\n      if (this.filtro <= 1024) return '#fbbf24';\n      return '#ef4444';\n    },\n    consumoTotal() {\n      let consumo = 2; // ESP32 base\n      if (this.janela > 0) consumo += 5;\n      if (this.ventilador > 0) consumo += (this.ventilador / 255) * 30;\n      if (this.exaustor) consumo += 45;\n      if (this.filtro > 0) consumo += 8;\n      return Math.round(consumo);\n    }\n  },\n  watch: {\n    msg() {\n      this.ultimaAtualizacao = new Date().toLocaleTimeString('pt-BR');\n    }\n  }\n}\n</script>\n\n<style>\n.status-atuadores {\n  background: #1f2937;\n  border-radius: 12px;\n  padding: 20px;\n}\n\n.status-atuadores h3 {\n  margin: 0 0 15px 0;\n  color: #f3f4f6;\n  font-size: 18px;\n}\n\n.atuador-item {\n  display: flex;\n  align-items: center;\n  padding: 12px;\n  margin-bottom: 10px;\n  border-radius: 8px;\n  background: #374151;\n  transition: all 0.3s ease;\n}\n\n.atuador-item:hover {\n  transform: translateX(5px);\n  box-shadow: 0 2px 8px rgba(0,0,0,0.2);\n}\n\n.atuador-item .icon {\n  font-size: 32px;\n  margin-right: 15px;\n}\n\n.atuador-item .info {\n  flex: 1;\n}\n\n.atuador-item .label {\n  font-size: 12px;\n  color: #9ca3af;\n  text-transform: uppercase;\n}\n\n.atuador-item .value {\n  font-size: 16px;\n  color: #f3f4f6;\n  font-weight: 600;\n}\n\n.atuador-item .indicator {\n  width: 12px;\n  height: 12px;\n  border-radius: 50%;\n  animation: pulse 2s infinite;\n}\n\n.footer-info {\n  margin-top: 20px;\n  padding-top: 15px;\n  border-top: 1px solid #4b5563;\n  display: flex;\n  justify-content: space-between;\n}\n\n.footer-info > div {\n  font-size: 13px;\n}\n\n.footer-info .label {\n  color: #9ca3af;\n  margin-right: 8px;\n}\n\n.footer-info .value {\n  color: #f3f4f6;\n  font-weight: 600;\n}\n\n@keyframes pulse {\n  0%, 100% { opacity: 1; }\n  50% { opacity: 0.5; }\n}\n</style>",
+      "storeOutMessages": true,
+      "passthru": true,
+      "templateScope": "local",
+      "className": "",
+      "x": 650,
+      "y": 520,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "3144baef716ac84f",
+      "type": "ui-chart",
+      "z": "ec01c2da649cf95f",
+      "group": "9b976eddc802eb95",
+      "name": "Histórico Acionamentos",
+      "label": "📊 Histórico de Acionamentos (24h)",
+      "order": 6,
+      "chartType": "bar",
+      "category": "categoria",
+      "categoryType": "msg",
+      "xAxisLabel": "",
+      "xAxisProperty": "",
+      "xAxisPropertyType": "timestamp",
+      "xAxisType": "category",
+      "xAxisFormat": "",
+      "xAxisFormatType": "auto",
+      "xmin": "",
+      "xmax": "",
+      "yAxisLabel": "",
+      "yAxisProperty": "",
+      "yAxisPropertyType": "property",
+      "ymin": "",
+      "ymax": "",
+      "bins": "",
+      "action": "replace",
+      "stackSeries": true,
+      "pointRadius": 3,
+      "showLegend": true,
+      "removeOlder": 1,
+      "removeOlderUnit": "86400",
+      "removeOlderPoints": "",
+      "colors": [
+          "#667eea",
+          "#4facfe",
+          "#43e97b",
+          "#fa709a",
+          "#000000",
+          "#000000",
+          "#000000",
+          "#000000",
+          "#000000"
+      ],
+      "textColor": [
+          "#666666"
+      ],
+      "textColorDefault": true,
+      "gridColor": [
+          "#e5e5e5"
+      ],
+      "gridColorDefault": true,
+      "width": "12",
+      "height": "5",
+      "className": "",
+      "interpolation": "linear",
+      "x": 640,
+      "y": 600,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "ebddcb73d1438c83",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Processar Histórico",
+      "func": "let historico = global.get('historicoAcionamentos') || [];\n\nif (historico.length === 0) {\n    return null;\n}\n\n// Agrupar por hora (últimas 24h)\nlet grupos = {};\nlet agora = new Date();\n\nfor (let h = 23; h >= 0; h--) {\n    let hora = new Date(agora.getTime() - (h * 3600000));\n    let horaKey = hora.getHours();\n    grupos[horaKey] = {\n        label: horaKey.toString().padStart(2, '0') + ':00',\n        janela: 0,\n        ventilador: 0,\n        exaustor: 0,\n        filtro: 0,\n        count: 0\n    };\n}\n\n// Processar dados\nhistorico.forEach(item => {\n    let timestamp = new Date(item.timestamp);\n    let diff = agora - timestamp;\n    \n    // Apenas últimas 24h\n    if (diff <= 86400000) {\n        let hora = timestamp.getHours();\n        if (grupos[hora]) {\n            grupos[hora].janela += item.janela || 0;\n            grupos[hora].ventilador += (item.ventilador || 0) > 0 ? 1 : 0;\n            grupos[hora].exaustor += item.exaustor ? 1 : 0;\n            grupos[hora].filtro += (item.filtro || 0) > 512 ? 1 : 0;\n            grupos[hora].count++;\n        }\n    }\n});\n\n// Calcular médias e formatar\nlet series = {\n    'Janela (° médio)': [],\n    'Ventilador (min)': [],\n    'Exaustor (min)': [],\n    'Filtro (ciclos)': []\n};\nlet labels = [];\n\nObject.keys(grupos).sort((a, b) => a - b).forEach(hora => {\n    let g = grupos[hora];\n    labels.push(g.label);\n    \n    series['Janela (° médio)'].push(g.count > 0 ? Math.round(g.janela / g.count) : 0);\n    series['Ventilador (min)'].push(g.ventilador * 3); // 3min/leitura\n    series['Exaustor (min)'].push(g.exaustor * 3);\n    series['Filtro (ciclos)'].push(g.filtro);\n});\n\n// Preparar mensagens para cada série\nlet messages = [];\nObject.keys(series).forEach(seriesName => {\n    labels.forEach((label, idx) => {\n        messages.push({\n            payload: series[seriesName][idx],\n            topic: seriesName,\n            categoria: label\n        });\n    });\n});\n\nreturn [messages];",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 380,
+      "y": 600,
+      "wires": [
+          [
+              "3144baef716ac84f"
+          ]
+      ]
+  },
+  {
+      "id": "329adb091c8cbe18",
+      "type": "inject",
+      "z": "ec01c2da649cf95f",
+      "name": "Refresh Histórico",
+      "repeat": "60",
+      "crontab": "",
+      "once": true,
+      "topic": "",
+      "x": 150,
+      "y": 600,
+      "wires": [
+          [
+              "ebddcb73d1438c83"
+          ]
+      ]
+  },
+  {
+      "id": "ad4892f063de16b6",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Verificar Mudança de Status + Formatar Alerta",
+      "func": "let data = msg.payload;\nif (typeof data === 'string') {\n    try {\n        data = JSON.parse(data);\n    } catch(e) {\n        return null;\n    }\n}\n\nlet ultimoStatus = global.get('ultimoStatus');\nlet novoStatus = data.status;\n\n// Log para debug\nnode.warn('━━━━━━━━━━━━━━━━━━━━━━━━');\nnode.warn('🔍 Verificando status:');\nnode.warn('   Último: ' + ultimoStatus);\nnode.warn('   Novo: ' + novoStatus);\n\n// Inicializar na primeira execução\nif (!ultimoStatus) {\n    global.set('ultimoStatus', novoStatus);\n    node.warn('   ✓ Status inicial salvo');\n    node.warn('━━━━━━━━━━━━━━━━━━━━━━━━');\n    return null;\n}\n\n// Verificar mudança\nif (ultimoStatus !== novoStatus) {\n    node.warn('   🚨 MUDANÇA DETECTADA!');\n    node.warn('━━━━━━━━━━━━━━━━━━━━━━━━');\n    \n    global.set('ultimoStatus', novoStatus);\n    \n    let statusEmoji = '';\n    let statusDescricao = '';\n    let alertLevel = '';\n    \n    if (novoStatus === 'SEGURO') {\n        statusEmoji = '✅';\n        statusDescricao = 'AMBIENTE SEGURO';\n        alertLevel = '🟢 Nível Normal';\n    } else if (novoStatus === 'ATENCAO') {\n        statusEmoji = '⚠️';\n        statusDescricao = 'ATENÇÃO NECESSÁRIA';\n        alertLevel = '🟡 Nível Moderado';\n    } else {\n        statusEmoji = '🚨';\n        statusDescricao = 'ALERTA CRÍTICO';\n        alertLevel = '🔴 Nível Perigoso';\n    }\n    \n    // Calcular faixa de PPM baseado no ADC\n    let faixaPPM = '';\n    if (data.adc <= 3760) {\n        faixaPPM = '<1000 ppm';\n    } else if (data.adc <= 3840) {\n        faixaPPM = '1000-2000 ppm';\n    } else {\n        faixaPPM = '>2000 ppm';\n    }\n    \n    let mensagem = {\n        type: 'message',\n        content: `${statusEmoji} *${statusDescricao}* ${statusEmoji}\\n` +\n                 `━━━━━━━━━━━━━━━━━━━━\\n` +\n                 `📡 *Monitor ENKI - Alerta Automático*\\n\\n` +\n                 `🔄 *Mudança de Status Detectada*\\n` +\n                 `   • De: *${ultimoStatus}*\\n` +\n                 `   • Para: *${novoStatus}*\\n\\n` +\n                 `${alertLevel}\\n` +\n                 `━━━━━━━━━━━━━━━━━━━━\\n\\n` +\n                 `📊 *Dados da Medição:*\\n` +\n                 `   📈 ADC: \\`${data.adc}\\`\\n` +\n                 `   💨 Nível CO: \\`${faixaPPM}\\`\\n` +\n                 `   🌡️ Temperatura: \\`${data.temp}°C\\`\\n` +\n                 `   💧 Umidade: \\`${data.umid}%\\`\\n\\n` +\n                 `⏰ *Timestamp:*\\n` +\n                 `   ${new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})}\\n\\n` +\n                 `━━━━━━━━━━━━━━━━━━━━\\n` +\n                 `🌍 *Global Solution 2025*\\n` +\n                 `🏫 FIAP - Future Work`,\n        parse_mode: 'Markdown'\n    };\n    \n    // ===========================================\n    // ENVIAR PARA TODOS OS USUÁRIOS REGISTRADOS\n    // ===========================================\n    \n    let todasMensagens = [];\n    \n    // 1. Enviar para grupo (se existir)\n    let groupChatId = global.get('groupChatId');\n    if (groupChatId) {\n        todasMensagens.push({...mensagem, chatId: groupChatId});\n        node.warn('📤 Grupo encontrado: ' + groupChatId);\n    }\n    \n    // 2. Enviar para todos usuários individuais\n    let chatIds = global.get('chatIds') || [];\n    node.warn('👥 Total de usuários registrados: ' + chatIds.length);\n    \n    chatIds.forEach(id => {\n        todasMensagens.push({...mensagem, chatId: id});\n    });\n    \n    if (todasMensagens.length === 0) {\n        node.warn('⚠️ ATENÇÃO: Nenhum usuário registrado!');\n        node.warn('💡 Envie /start para o bot para se registrar');\n        return null;\n    }\n    \n    node.warn('━━━━━━━━━━━━━━━━━━━━━━━━');\n    node.warn('📤 Enviando alertas para:');\n    node.warn('   • Grupo: ' + (groupChatId ? 'SIM ✓' : 'NÃO ✗'));\n    node.warn('   • Usuários: ' + chatIds.length);\n    node.warn('   • TOTAL: ' + todasMensagens.length + ' destinatários');\n    node.warn('━━━━━━━━━━━━━━━━━━━━━━━━');\n    \n    // Enviar cada mensagem individualmente\n    return todasMensagens.map(msg => ({payload: msg}));\n}\n\nnode.warn('   ✓ Status inalterado');\nnode.warn('━━━━━━━━━━━━━━━━━━━━━━━━');\nreturn null;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 480,
+      "y": 140,
+      "wires": [
+          [
+              "7ff46982d35d0811"
+          ]
+      ]
+  },
+  {
+      "id": "d31aa76a56e0c4ef",
+      "type": "ui-chart",
+      "z": "ec01c2da649cf95f",
+      "group": "87d95be2b93bbc76",
+      "name": "Gráfico Combinado",
+      "label": "📈 Tendência Temp & Umid (1h)",
+      "order": 3,
+      "chartType": "line",
+      "category": "topic",
+      "categoryType": "msg",
+      "xAxisLabel": "",
+      "xAxisProperty": "",
+      "xAxisPropertyType": "timestamp",
+      "xAxisType": "time",
+      "xAxisFormat": "",
+      "xAxisFormatType": "auto",
+      "xmin": "",
+      "xmax": "",
+      "yAxisLabel": "",
+      "yAxisProperty": "",
+      "yAxisPropertyType": "property",
+      "ymin": "",
+      "ymax": "",
+      "bins": "",
+      "action": "append",
+      "stackSeries": false,
+      "pointRadius": 3,
+      "showLegend": true,
+      "removeOlder": 1,
+      "removeOlderUnit": "3600",
+      "removeOlderPoints": "",
+      "colors": [
+          "#ff7300",
+          "#0095ff",
+          "#000000",
+          "#000000",
+          "#000000",
+          "#000000",
+          "#000000",
+          "#000000",
+          "#000000"
+      ],
+      "textColor": [
+          "#666666"
+      ],
+      "textColorDefault": true,
+      "gridColor": [
+          "#e5e5e5"
+      ],
+      "gridColorDefault": true,
+      "width": "4",
+      "height": 4,
+      "className": "",
+      "interpolation": "linear",
+      "x": 1430,
+      "y": 300,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "669833b44f2ac6ae",
+      "type": "comment",
+      "z": "ec01c2da649cf95f",
+      "name": "Sessão Bot Telegram",
+      "info": "",
+      "x": 200,
+      "y": 740,
+      "wires": []
+  },
+  {
+      "id": "ad2d268ca920fafb",
+      "type": "debug",
+      "z": "ec01c2da649cf95f",
+      "name": "debug tabela",
+      "active": false,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 1690,
+      "y": 340,
+      "wires": []
+  },
+  {
+      "id": "2bdcc00ee2902c57",
+      "type": "debug",
+      "z": "ec01c2da649cf95f",
+      "name": "chegou no alerta telegram",
+      "active": false,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "true",
+      "targetType": "full",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 1230,
+      "y": 100,
+      "wires": []
+  },
+  {
+      "id": "68dc4ec5bffe95fa",
+      "type": "function",
+      "z": "ec01c2da649cf95f",
+      "name": "Responder Usuários",
+      "func": "var chatId = msg.payload.chatId;\nvar chatIds = global.get(\"chatIds\") || [];\nvar groupChatId = global.get(\"groupChatId\");\n\nvar totalUsuarios = chatIds.length;\nvar temGrupo = groupChatId ? true : false;\n\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: `👥 *Monitor ENKI - Usuários Registrados*\\n\\n` +\n        `📊 *Estatísticas:*\\n` +\n        `   • Usuários individuais: ${totalUsuarios}\\n` +\n        `   • Grupo registrado: ${temGrupo ? 'SIM ✓' : 'NÃO ✗'}\\n\\n` +\n        `🔔 Total de destinatários: ${totalUsuarios + (temGrupo ? 1 : 0)}\\n\\n` +\n        `💡 *Como funciona:*\\n` +\n        `Todos que enviarem /start para o bot receberão alertas automáticos quando houver mudança de status.\\n\\n` +\n        `_Última verificação: ${new Date().toLocaleString(\"pt-BR\")}_`,\n    parse_mode: \"Markdown\"\n};\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": "",
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 760,
+      "y": 1140,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "14efacc862fdcad4",
+      "type": "inject",
+      "z": "ec01c2da649cf95f",
+      "name": "test",
+      "props": [
+          {
+              "p": "payload"
+          },
+          {
+              "p": "topic",
+              "vt": "str"
+          }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "{\"adc\":3850,\"status\":\"ATENCAO\",\"nivel\":\"1500ppm\",\"temp\":26,\"umid\":65,\"automacao\":{\"janela\":0,\"ventilador\":0,\"exaustor\":false,\"filtro\":0}}",
+      "payloadType": "json",
+      "x": 130,
+      "y": 140,
+      "wires": [
+          [
+              "ad4892f063de16b6"
+          ]
+      ]
+  },
+  {
+      "id": "2ede4fa559f9a1f4",
+      "type": "inject",
+      "z": "ec01c2da649cf95f",
+      "name": "test 2",
+      "props": [
+          {
+              "p": "payload"
+          }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "{\"chatId\":8320613648,\"type\":\"message\",\"content\":\"🧪 Teste manual do Telegram\",\"parse_mode\":\"Markdown\"}",
+      "payloadType": "json",
+      "x": 990,
+      "y": 740,
+      "wires": [
+          [
+              "fecbc64dee305f41"
+          ]
+      ]
+  },
+  {
+      "id": "NOVO_TEMPLATE_TABELA",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "a8e0a3da79a205f6",
+      "page": "",
+      "ui": "",
+      "name": "Tabela Histórico Customizada",
+      "order": 3,
+      "width": "12",
+      "height": "12",
+      "format": "<template>\n  <div class=\"historico-container\">\n    <h3>📋 Últimas 10 Leituras</h3>\n    <div class=\"tabela-wrapper\">\n      <table>\n        <thead>\n          <tr>\n            <th>🕐 Hora</th>\n            <th>📊 ADC</th>\n            <th>🚦 Status</th>\n            <th>🌡️ Temp</th>\n            <th>💧 Umid</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr v-if=\"dados.length === 0\">\n            <td colspan=\"5\" class=\"sem-dados\">⏳ Aguardando dados...</td>\n          </tr>\n          <tr v-for=\"(item, index) in dados\" :key=\"index\" :class=\"getStatusClass(item.status)\">\n            <td>{{item.time}}</td>\n            <td>{{item.adc}}</td>\n            <td><span class=\"badge\" :class=\"getBadgeClass(item.status)\">{{item.status}}</span></td>\n            <td>{{item.temp}}</td>\n            <td>{{item.umid}}</td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n    <div class=\"footer-info\">\n      <span>Total de registros: {{dados.length}}</span>\n      <span>Última atualização: {{ultimaAtualizacao}}</span>\n    </div>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      dados: [],\n      ultimaAtualizacao: 'N/A'\n    }\n  },\n  watch: {\n    msg: {\n      handler(newMsg) {\n        if (newMsg && newMsg.payload && Array.isArray(newMsg.payload)) {\n          this.dados = newMsg.payload;\n          this.ultimaAtualizacao = new Date().toLocaleTimeString('pt-BR');\n        }\n      },\n      deep: true\n    }\n  },\n  methods: {\n    getStatusClass(status) {\n      if (!status) return '';\n      if (status.includes('SEGURO')) return 'row-safe';\n      if (status.includes('ATENCAO') || status.includes('ATENÇÃO')) return 'row-warning';\n      if (status.includes('PERIGO')) return 'row-danger';\n      return '';\n    },\n    getBadgeClass(status) {\n      if (!status) return 'badge-default';\n      if (status.includes('SEGURO')) return 'badge-safe';\n      if (status.includes('ATENCAO') || status.includes('ATENÇÃO')) return 'badge-warning';\n      if (status.includes('PERIGO')) return 'badge-danger';\n      return 'badge-default';\n    }\n  }\n}\n</script>\n\n<style>\n.historico-container {\n  background: #1f2937;\n  border-radius: 12px;\n  padding: 20px;\n}\n\n.historico-container h3 {\n  margin: 0 0 15px 0;\n  color: #f3f4f6;\n  font-size: 18px;\n  text-align: center;\n}\n\n.tabela-wrapper {\n  overflow-x: auto;\n  border-radius: 8px;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  background: #374151;\n}\n\nthead {\n  background: #4b5563;\n  position: sticky;\n  top: 0;\n  z-index: 10;\n}\n\nth {\n  padding: 12px 8px;\n  text-align: center;\n  color: #f3f4f6;\n  font-weight: 600;\n  font-size: 14px;\n  border-bottom: 2px solid #6b7280;\n}\n\ntd {\n  padding: 12px 8px;\n  text-align: center;\n  color: #e5e7eb;\n  font-size: 14px;\n  border-bottom: 1px solid #4b5563;\n}\n\ntbody tr {\n  transition: all 0.3s ease;\n}\n\ntbody tr:hover {\n  background: #4b5563;\n  transform: scale(1.01);\n}\n\n.row-safe {\n  border-left: 4px solid #10b981;\n}\n\n.row-warning {\n  border-left: 4px solid #fbbf24;\n}\n\n.row-danger {\n  border-left: 4px solid #ef4444;\n  animation: pulse-row 2s infinite;\n}\n\n@keyframes pulse-row {\n  0%, 100% { opacity: 1; }\n  50% { opacity: 0.7; }\n}\n\n.badge {\n  padding: 4px 12px;\n  border-radius: 12px;\n  font-size: 12px;\n  font-weight: 600;\n  text-transform: uppercase;\n}\n\n.badge-safe {\n  background: #10b981;\n  color: white;\n}\n\n.badge-warning {\n  background: #fbbf24;\n  color: #1f2937;\n}\n\n.badge-danger {\n  background: #ef4444;\n  color: white;\n}\n\n.badge-default {\n  background: #6b7280;\n  color: white;\n}\n\n.sem-dados {\n  text-align: center;\n  color: #9ca3af;\n  font-style: italic;\n  padding: 30px;\n}\n\n.footer-info {\n  display: flex;\n  justify-content: space-between;\n  margin-top: 15px;\n  padding-top: 15px;\n  border-top: 1px solid #4b5563;\n  color: #9ca3af;\n  font-size: 12px;\n}\n\n/* Responsivo */\n@media (max-width: 768px) {\n  table {\n    font-size: 12px;\n  }\n  \n  th, td {\n    padding: 8px 4px;\n  }\n  \n  .footer-info {\n    flex-direction: column;\n    gap: 8px;\n    text-align: center;\n  }\n}\n</style>",
+      "storeOutMessages": true,
+      "passthru": true,
+      "templateScope": "local",
+      "className": "",
+      "x": 1710,
+      "y": 420,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "CSS_FIX_TABELA",
+      "type": "ui-template",
+      "z": "ec01c2da649cf95f",
+      "group": "a8e0a3da79a205f6",
+      "page": "",
+      "ui": "",
+      "name": "CSS Fix - Tabela Dark Mode",
+      "order": 2,
+      "width": "0",
+      "height": "0",
+      "format": "<style>\n/* Fix para ui-table no tema escuro */\n.nrdb-ui-table {\n  background: #374151 !important;\n}\n\n.nrdb-ui-table table {\n  background: #374151 !important;\n  color: #f3f4f6 !important;\n}\n\n.nrdb-ui-table thead {\n  background: #4b5563 !important;\n}\n\n.nrdb-ui-table th {\n  color: #f3f4f6 !important;\n  font-weight: 600 !important;\n  border-bottom: 2px solid #6b7280 !important;\n}\n\n.nrdb-ui-table td {\n  color: #e5e7eb !important;\n  border-bottom: 1px solid #4b5563 !important;\n}\n\n.nrdb-ui-table tbody tr:hover {\n  background: #4b5563 !important;\n}\n\n/* Fix para paginação */\n.nrdb-ui-table .v-data-table__wrapper {\n  background: #374151 !important;\n}\n\n.nrdb-ui-table .v-data-footer {\n  background: #374151 !important;\n  color: #9ca3af !important;\n}\n\n.nrdb-ui-table .v-data-footer__select .v-select__selection {\n  color: #f3f4f6 !important;\n}\n\n/* Título da tabela */\n.nrdb-ui-table .v-data-table-header {\n  background: #1f2937 !important;\n  color: #f3f4f6 !important;\n}\n</style>",
+      "storeOutMessages": false,
+      "passthru": false,
+      "templateScope": "local",
+      "className": "",
+      "x": 1700,
+      "y": 460,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "aaf1a9af4ea2ff0d",
+      "type": "mqtt-broker",
+      "name": "MQTT HiveMQ",
+      "broker": "broker.hivemq.com",
+      "port": "1883",
+      "clientid": "",
+      "autoConnect": true,
+      "usetls": false,
+      "protocolVersion": 4,
+      "keepalive": "60",
+      "cleansession": true,
+      "autoUnsubscribe": true,
+      "birthTopic": "",
+      "birthQos": "0",
+      "birthPayload": "",
+      "birthMsg": {},
+      "closeTopic": "",
+      "closePayload": "",
+      "closeMsg": {},
+      "willTopic": "",
+      "willQos": "0",
+      "willPayload": "",
+      "willMsg": {},
+      "userProps": "",
+      "sessionExpiry": ""
+  },
+  {
+      "id": "b9f75a90a8387add",
+      "type": "ui-group",
+      "name": "📊 Monitoramento CO",
+      "page": "05fb7cd159804a33",
+      "width": "12",
+      "height": "1",
+      "order": 3,
+      "showTitle": true,
+      "className": "",
+      "visible": "true",
+      "disabled": "false",
+      "groupType": "default"
+  },
+  {
+      "id": "87d95be2b93bbc76",
+      "type": "ui-group",
+      "name": "🌡️ Clima",
+      "page": "05fb7cd159804a33",
+      "width": "12",
+      "height": "1",
+      "order": 4,
+      "showTitle": true,
+      "className": "",
+      "visible": "true",
+      "disabled": "false",
+      "groupType": "default"
+  },
+  {
+      "id": "6c0c1a196ba794c9",
+      "type": "ui-group",
+      "name": "🚦 Status Atual",
+      "page": "05fb7cd159804a33",
+      "width": "12",
+      "height": "1",
+      "order": 2,
+      "showTitle": true
+  },
+  {
+      "id": "55c6c8e6c080b396",
+      "type": "telegram bot",
+      "botname": "MonitorENKIBot",
+      "usernames": "",
+      "chatids": "",
+      "baseapiurl": "",
+      "testenvironment": false,
+      "updatemode": "polling",
+      "pollinterval": "300",
+      "usesocks": false,
+      "sockshost": "",
+      "socksport": "",
+      "socksusername": "",
+      "sockspassword": "",
+      "bothost": "",
+      "botpath": "",
+      "localbothost": "",
+      "localbotport": "",
+      "publicbotport": "",
+      "privatekey": "",
+      "certificate": "",
+      "useselfsignedcertificate": false,
+      "sslterminated": false,
+      "verboselogging": false
+  },
+  {
+      "id": "d80a62f0a2915c2e",
+      "type": "ui-group",
+      "name": "Header GS2-2025",
+      "page": "05fb7cd159804a33",
+      "width": "12",
+      "height": 1,
+      "order": 1,
+      "showTitle": false,
+      "className": "",
+      "visible": "true",
+      "disabled": "false",
+      "groupType": "default"
+  },
+  {
+      "id": "a8e0a3da79a205f6",
+      "type": "ui-group",
+      "name": "📈 Estatísticas",
+      "page": "05fb7cd159804a33",
+      "width": "12",
+      "height": "1",
+      "order": 5,
+      "showTitle": true,
+      "visible": true,
+      "disabled": false
+  },
+  {
+      "id": "9b976eddc802eb95",
+      "type": "ui-group",
+      "name": "🏭 Automação",
+      "page": "05fb7cd159804a33",
+      "width": "12",
+      "height": "1",
+      "order": 6,
+      "showTitle": true,
+      "className": "",
+      "visible": "true",
+      "disabled": "false",
+      "groupType": "default"
+  },
+  {
+      "id": "05fb7cd159804a33",
+      "type": "ui-page",
+      "name": "Monitor ENKI - Qualidade do Ar",
+      "ui": "fb026497e3258b13",
+      "path": "/enki-gs-future-at-work",
+      "icon": "air",
+      "layout": "grid",
+      "theme": "theme_enki",
+      "breakpoints": [
+          {
+              "name": "Default",
+              "px": "0",
+              "cols": "3"
+          },
+          {
+              "name": "Tablet",
+              "px": "576",
+              "cols": "6"
+          },
+          {
+              "name": "Small Desktop",
+              "px": "768",
+              "cols": "9"
+          },
+          {
+              "name": "Desktop",
+              "px": "1024",
+              "cols": "12"
+          }
+      ],
+      "order": 1,
+      "className": "",
+      "visible": "true",
+      "disabled": "false"
+  },
+  {
+      "id": "fb026497e3258b13",
+      "type": "ui-base",
+      "name": "My Dashboard",
+      "path": "/dashboard",
+      "appIcon": "https://newpartselevator.com.br/assets/img/favicon/favicon-16x16.png",
+      "includeClientData": true,
+      "acceptsClientConfig": [
+          "ui-notification",
+          "ui-control"
+      ],
+      "showPathInSidebar": false,
+      "headerContent": "page",
+      "navigationStyle": "default",
+      "titleBarStyle": "default",
+      "showReconnectNotification": true,
+      "notificationDisplayTime": 1,
+      "showDisconnectNotification": true,
+      "allowInstall": true
+  },
+  {
+      "id": "theme_enki",
+      "type": "ui-theme",
+      "name": "Enki Dark",
+      "colors": {
+          "surface": "#1f2937",
+          "primary": "#0094ce",
+          "bgPage": "#111827",
+          "groupBg": "#374151",
+          "groupOutline": "#4b5563"
+      },
+      "sizes": {
+          "density": "default",
+          "pagePadding": "12px",
+          "groupGap": "12px",
+          "groupBorderRadius": "8px",
+          "widgetGap": "12px"
+      }
+  },
+  {
+      "id": "a12d5eefce38c1a2",
+      "type": "global-config",
+      "env": [],
+      "modules": {
+          "@flowfuse/node-red-dashboard": "1.29.0",
+          "node-red-contrib-telegrambot": "16.4.0"
+      }
+  }
+]
